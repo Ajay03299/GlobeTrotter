@@ -115,9 +115,15 @@ export default function TripDetailsPage({ params }: { params: Promise<{ id: stri
                   <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-sky-500 border-4 border-white shadow-sm" />
                   <div className="mb-6">
                     <h3 className="font-bold text-lg text-slate-900">{stop.city?.name}, {stop.city?.country}</h3>
-                    <p className="text-sm text-slate-500 mb-3">
-                      {formatDate(stop.startDate || '')} — {formatDate(stop.endDate || '')}
-                    </p>
+                    {(stop.startDate || stop.endDate) && (
+                      <p className="text-sm text-slate-500 mb-3">
+                        {stop.startDate && stop.endDate 
+                          ? `${formatDate(stop.startDate)} — ${formatDate(stop.endDate)}`
+                          : stop.startDate 
+                            ? formatDate(stop.startDate) 
+                            : formatDate(stop.endDate)}
+                      </p>
+                    )}
                     
                     {/* Activities List */}
                     {stop.activities && stop.activities.length > 0 && (

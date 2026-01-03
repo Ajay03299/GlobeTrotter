@@ -5,7 +5,7 @@ import { ButtonHTMLAttributes, forwardRef } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
   fullWidth?: boolean;
 }
@@ -30,6 +30,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             'h-9 px-4 text-sm': size === 'sm',
             'h-11 px-5 text-base': size === 'md',
             'h-14 px-8 text-lg': size === 'lg',
+            'h-10 w-10 p-0': size === 'icon',
           },
           fullWidth && 'w-full',
           className

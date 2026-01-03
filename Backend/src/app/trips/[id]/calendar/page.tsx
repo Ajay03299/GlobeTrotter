@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Calendar } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getTrip } from '@/lib/api';
@@ -12,7 +12,6 @@ interface DayEvent {
   id: string;
   title: string;
   type: string;
-  city: string;
   time?: string;
 }
 
@@ -52,6 +51,7 @@ export default function TripCalendarPage({ params }: { params: Promise<{ id: str
     const arr: Date[] = [];
     const startDate = new Date(start);
     const endDate = new Date(end);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return arr;
     for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
       arr.push(new Date(dt));
     }
@@ -60,14 +60,17 @@ export default function TripCalendarPage({ params }: { params: Promise<{ id: str
 
   const days = trip.startDate && trip.endDate ? getDaysArray(trip.startDate, trip.endDate) : [];
 
-  // Build calendar data: for each day, figure out what city we're in and what activities are scheduled
+  // Build calendar data
   const buildCalendarData = (): DayData[] => {
     const stops = trip.stops || [];
     
-    return days.map(day => {
+    // Track which activities have been shown (for activities with specific scheduledAt)
+    const shownActivityIds = new Set<string>();
+    
+    return days.map((day, dayIndex) => {
       const dateStr = day.toISOString().split('T')[0];
       
-      // Find which city we're in on this day
+      // Find which city/stop we're in on this day
       let currentCity: string | null = null;
       let currentStop: Stop | null = null;
       
@@ -81,7 +84,6 @@ export default function TripCalendarPage({ params }: { params: Promise<{ id: str
             break;
           }
         } else if (stop.startDate) {
-          // Only start date, assume single day
           const stopStart = new Date(stop.startDate).toISOString().split('T')[0];
           if (dateStr === stopStart) {
             currentCity = stop.city?.name || null;
@@ -91,52 +93,79 @@ export default function TripCalendarPage({ params }: { params: Promise<{ id: str
         }
       }
 
-      // If no dates set on stops, distribute evenly or fallback
+      // If no dates set on stops, distribute evenly
       if (!currentCity && stops.length > 0) {
-        // Try to infer city from stop position based on trip duration
         const tripDuration = days.length;
         const daysPerStop = Math.ceil(tripDuration / stops.length);
-        const dayIndex = days.findIndex(d => d.toISOString().split('T')[0] === dateStr);
         const stopIndex = Math.min(Math.floor(dayIndex / daysPerStop), stops.length - 1);
         currentCity = stops[stopIndex]?.city?.name || null;
         currentStop = stops[stopIndex] || null;
       }
 
-      // Get activities for this day
       const events: DayEvent[] = [];
       
-      // Check activities with scheduledAt matching this date
+      // First, add activities that have scheduledAt matching this specific date
       stops.forEach(stop => {
         stop.activities?.forEach(ta => {
           if (ta.scheduledAt) {
             const actDate = new Date(ta.scheduledAt).toISOString().split('T')[0];
             if (actDate === dateStr) {
-              const time = new Date(ta.scheduledAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+              const time = new Date(ta.scheduledAt).toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+              });
               events.push({
                 id: ta.id,
                 title: ta.activity?.name || 'Activity',
                 type: ta.activity?.type || 'OTHER',
-                city: stop.city?.name || 'Unknown',
                 time
               });
+              shownActivityIds.add(ta.id);
             }
           }
         });
       });
 
-      // If we're in a city and there are activities without dates, show them for that stop
-      if (currentStop && events.length === 0) {
-        currentStop.activities?.forEach(ta => {
-          if (!ta.scheduledAt) {
-            events.push({
-              id: ta.id,
-              title: ta.activity?.name || 'Activity',
-              type: ta.activity?.type || 'OTHER',
-              city: currentStop!.city?.name || 'Unknown'
-            });
+      // For the FIRST day of a stop, show activities that don't have a scheduled time
+      if (currentStop) {
+        const isFirstDayOfStop = (() => {
+          if (currentStop.startDate) {
+            return new Date(currentStop.startDate).toISOString().split('T')[0] === dateStr;
           }
-        });
+          // If no dates, check if this is the first day we're distributing to this stop
+          const stopIndex = stops.indexOf(currentStop);
+          const tripDuration = days.length;
+          const daysPerStop = Math.ceil(tripDuration / stops.length);
+          const expectedFirstDay = stopIndex * daysPerStop;
+          return dayIndex === expectedFirstDay;
+        })();
+
+        if (isFirstDayOfStop) {
+          currentStop.activities?.forEach(ta => {
+            if (!ta.scheduledAt && !shownActivityIds.has(ta.id)) {
+              events.push({
+                id: ta.id,
+                title: ta.activity?.name || 'Activity',
+                type: ta.activity?.type || 'OTHER'
+              });
+              shownActivityIds.add(ta.id);
+            }
+          });
+        }
       }
+
+      // Sort events: those with times first (sorted by time), then those without
+      events.sort((a, b) => {
+        if (a.time && b.time) {
+          const timeA = new Date(`1970-01-01 ${a.time}`).getTime();
+          const timeB = new Date(`1970-01-01 ${b.time}`).getTime();
+          return timeA - timeB;
+        }
+        if (a.time && !b.time) return -1;
+        if (!a.time && b.time) return 1;
+        return 0;
+      });
 
       return { date: day, city: currentCity, events };
     });
@@ -164,54 +193,55 @@ export default function TripCalendarPage({ params }: { params: Promise<{ id: str
             <p className="text-slate-500">No dates set for this trip.</p>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {calendarData.map((dayData, idx) => {
+          <div className="space-y-3">
+            {calendarData.map((dayData) => {
               const dateStr = dayData.date.toISOString().split('T')[0];
+              const hasActivities = dayData.events.length > 0;
+              
               return (
-                <Card key={dateStr} className="p-0 overflow-hidden hover:shadow-md transition-shadow">
+                <Card key={dateStr} className={`p-0 overflow-hidden transition-shadow ${hasActivities ? 'hover:shadow-md' : ''}`}>
                   <div className="flex flex-col md:flex-row">
                     {/* Date Column */}
-                    <div className="md:w-40 shrink-0 bg-slate-100 p-4 flex flex-col justify-center items-center md:items-start border-b md:border-b-0 md:border-r border-slate-200">
-                      <div className="text-3xl font-bold text-slate-900">
+                    <div className={`md:w-36 shrink-0 p-4 flex flex-col justify-center items-center md:items-start border-b md:border-b-0 md:border-r ${hasActivities ? 'bg-sky-50 border-sky-100' : 'bg-slate-50 border-slate-200'}`}>
+                      <div className={`text-3xl font-bold ${hasActivities ? 'text-sky-900' : 'text-slate-700'}`}>
                         {dayData.date.getDate()}
                       </div>
-                      <div className="text-sm text-slate-600">
-                        {dayData.date.toLocaleDateString('en-US', { weekday: 'long' })}
+                      <div className={`text-sm ${hasActivities ? 'text-sky-700' : 'text-slate-500'}`}>
+                        {dayData.date.toLocaleDateString('en-US', { weekday: 'short' })}
                       </div>
                       <div className="text-xs text-slate-400">
-                        {dayData.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        {dayData.date.toLocaleDateString('en-US', { month: 'short' })}
                       </div>
                     </div>
 
                     {/* Content Column */}
                     <div className="flex-1 p-4">
-                      {/* City Badge */}
+                      {/* City Badge - always shown if we have a city */}
                       {dayData.city && (
-                        <div className="inline-flex items-center gap-1 px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-sm font-medium mb-3">
-                          <MapPin className="h-3 w-3" />
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
+                          <MapPin className="h-3.5 w-3.5" />
                           {dayData.city}
                         </div>
                       )}
 
                       {/* Activities */}
-                      {dayData.events.length > 0 ? (
-                        <div className="space-y-2">
+                      {hasActivities && (
+                        <div className="mt-3 space-y-2">
                           {dayData.events.map((event) => (
-                            <div key={event.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div key={event.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
                               {event.time && (
-                                <span className="text-xs font-mono text-slate-400 min-w-[70px]">
-                                  {event.time}
-                                </span>
+                                <div className="flex items-center gap-1.5 text-sky-600 min-w-[85px]">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  <span className="text-sm font-medium">{event.time}</span>
+                                </div>
                               )}
                               <div className="flex-1">
                                 <div className="font-semibold text-slate-900">{event.title}</div>
-                                <div className="text-xs text-slate-500">{event.type}</div>
+                                <div className="text-xs text-slate-500 capitalize">{event.type.toLowerCase()}</div>
                               </div>
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-slate-400 italic text-sm">No activities scheduled</p>
                       )}
                     </div>
                   </div>

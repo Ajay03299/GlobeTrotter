@@ -97,3 +97,4 @@ export function CitySearch({ onSelect, compact = false }: CitySearchProps) {
   );
 }
 
+
