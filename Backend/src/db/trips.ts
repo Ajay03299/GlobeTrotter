@@ -2,10 +2,27 @@ import { prisma } from "./prisma";
 import { createTripSchema, tripIdSchema } from "./schemas";
 
 export async function createTrip(input: unknown) {
-  const data = createTripSchema.parse(input);
+  const { stops, ...rest } = createTripSchema.parse(input);
+
+  const prismaData: any = { ...rest };
+
+  if (stops && stops.length > 0) {
+    prismaData.stops = {
+      create: stops.map((stop) => ({
+        cityId: stop.cityId,
+        position: stop.position,
+        activities: stop.activities ? {
+          create: stop.activities.map((act) => ({
+            activityId: act.activityId,
+            position: act.position
+          }))
+        } : undefined
+      }))
+    };
+  }
 
   return prisma.trip.create({
-    data,
+    data: prismaData,
   });
 }
 

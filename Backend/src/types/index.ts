@@ -116,6 +116,24 @@ export interface Trip {
 }
 
 // =========================
+// INPUT TYPES
+// =========================
+export interface CreateTripInput {
+  name: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  stops?: {
+    cityId: string;
+    position: number;
+    activities?: {
+      activityId: string;
+      position?: number;
+    }[];
+  }[];
+}
+
+// =========================
 // API RESPONSE
 // =========================
 export interface ApiResponse<T> {
@@ -126,4 +144,3 @@ export interface ApiResponse<T> {
     details?: unknown;
   };
 }
-

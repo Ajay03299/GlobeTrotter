@@ -22,6 +22,11 @@ const Popup = dynamic(
   { ssr: false }
 );
 
+const Polyline = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Polyline),
+  { ssr: false }
+);
+
 interface Location {
   id: string;
   name: string;
@@ -35,13 +40,15 @@ interface MapViewProps {
   center?: [number, number];
   zoom?: number;
   className?: string;
+  showPath?: boolean;
 }
 
 export default function MapView({ 
   locations = [], 
   center = [20, 0], 
   zoom = 2, 
-  className = "h-[400px] w-full rounded-xl"
+  className = "h-[400px] w-full rounded-xl",
+  showPath = false
 }: MapViewProps) {
 
   // Fix for Leaflet default icon not loading in Next.js
@@ -59,6 +66,8 @@ export default function MapView({
       });
     })();
   }, []);
+
+  const pathCoordinates = locations.map(loc => [loc.lat, loc.lng] as [number, number]);
 
   return (
     <div className={className}>
@@ -82,6 +91,9 @@ export default function MapView({
             </Popup>
           </Marker>
         ))}
+        {showPath && locations.length > 1 && (
+          <Polyline positions={pathCoordinates} color="#0ea5e9" dashArray="10, 10" />
+        )}
       </MapContainer>
     </div>
   );

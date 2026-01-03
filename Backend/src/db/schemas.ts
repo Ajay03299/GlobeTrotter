@@ -25,6 +25,14 @@ export const createTripSchema = z.object({
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   coverPhoto: z.string().url().optional(),
+  stops: z.array(z.object({
+    cityId: z.string().cuid(),
+    position: z.number().int(),
+    activities: z.array(z.object({
+      activityId: z.string().cuid(),
+      position: z.number().int().optional(),
+    })).optional()
+  })).optional(),
 });
 
 export const tripIdSchema = z.object({

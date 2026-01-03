@@ -165,6 +165,23 @@ export async function getCities(search?: string) {
   return apiRequest<City[]>(`/api/cities${params}`);
 }
 
+export async function getActivities(cityId: string) {
+  if (DEV_MODE) {
+    // Mock activities
+    const mockActivities = [
+      { id: 'a1', cityId: 'city-1', name: 'Eiffel Tower', type: 'SIGHTSEEING', avgCost: 30, durationMin: 120 },
+      { id: 'a2', cityId: 'city-1', name: 'Louvre Museum', type: 'CULTURE', avgCost: 20, durationMin: 180 },
+      { id: 'a3', cityId: 'city-1', name: 'Seine Cruise', type: 'SIGHTSEEING', avgCost: 15, durationMin: 60 },
+      { id: 'a4', cityId: 'city-2', name: 'Shibuya Crossing', type: 'SIGHTSEEING', avgCost: 0, durationMin: 30 },
+      { id: 'a5', cityId: 'city-2', name: 'Sushi Making', type: 'FOOD', avgCost: 80, durationMin: 90 },
+    ] as any[]; // quick cast
+
+    return { ok: true, data: mockActivities.filter(a => a.cityId === cityId) };
+  }
+  return apiRequest<any[]>(`/api/activities?cityId=${cityId}`);
+}
+
+
 export async function getCity(id: string) {
   if (DEV_MODE) return { ok: true, data: null };
   return apiRequest<City>(`/api/cities/${id}`);

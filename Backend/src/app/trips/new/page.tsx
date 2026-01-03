@@ -1,171 +1,420 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Calendar, FileText, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Plus, MapPin, Calendar, Trash2, Check, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { CitySearch } from '@/components/trips/CitySearch';
-import { createTrip } from '@/lib/api';
+import MapView from '@/components/maps/MapView';
+import { createTrip, getActivities } from '@/lib/api';
+import { formatDate } from '@/lib/utils';
+import type { City, Activity } from '@/types';
 import Link from 'next/link';
-import type { City } from '@/types';
 
-function CreateTripForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialCityId = searchParams.get('city');
+// ==========================================
+// TYPES
+// ==========================================
 
-  const [step, setStep] = useState(1);
+interface SelectedActivity extends Activity {
+  tempId: string; // unique id for frontend list
+}
+
+interface TripStop {
+  tempId: string;
+  city: City;
+  activities: SelectedActivity[];
+}
+
+interface TripData {
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  stops: TripStop[];
+}
+
+// ==========================================
+// ACTIVITY SELECTOR COMPONENT
+// ==========================================
+
+function ActivitySelector({ cityId, onSelect }: { cityId: string; onSelect: (act: Activity) => void }) {
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // Form State
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [tripName, setTripName] = useState('');
-  const [dates, setDates] = useState({ start: '', end: '' });
-  const [description, setDescription] = useState('');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedCity || !tripName || !dates.start || !dates.end) return;
-
-    setLoading(true);
-    
-    try {
-      const res = await createTrip({
-        name: tripName,
-        description,
-        startDate: new Date(dates.start).toISOString(),
-        endDate: new Date(dates.end).toISOString(),
-      });
-
-      if (res.ok) {
-        router.push('/dashboard');
+  useEffect(() => {
+    async function fetchActivities() {
+      setLoading(true);
+      try {
+        const res = await getActivities(cityId);
+        if (res.ok && res.data) {
+          setActivities(res.data);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(error);
     }
-    
-    setLoading(false);
-  }
+    if (cityId) fetchActivities();
+  }, [cityId]);
+
+  if (loading) return <div className="text-center py-4 text-sm text-slate-500">Loading activities...</div>;
+  if (activities.length === 0) return <div className="text-center py-4 text-sm text-slate-500">No activities found for this city.</div>;
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
-      <Link href="/dashboard" className="inline-flex items-center text-slate-500 hover:text-slate-900 mb-8">
-        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
-      </Link>
-
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Create New Trip</h1>
-        <p className="text-slate-500">Let's start planning your next adventure.</p>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-8">
-          {/* Step 1: Destination */}
-          <Card className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
-                <span className="font-bold text-sky-600">1</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Where are you going?</h3>
-                <p className="text-slate-500 mb-4 text-sm">Search for a city to start your itinerary.</p>
-                
-                {selectedCity ? (
-                  <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                    <div>
-                      <h4 className="font-bold text-slate-900">{selectedCity.name}</h4>
-                      <p className="text-sm text-slate-500">{selectedCity.country}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedCity(null)}>
-                      Change
-                    </Button>
-                  </div>
-                ) : (
-                  <CitySearch onSelect={setSelectedCity} />
-                )}
-              </div>
+    <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+      {activities.map(act => (
+        <div key={act.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
+          <div>
+            <div className="font-medium text-slate-900">{act.name}</div>
+            <div className="text-xs text-slate-500 flex gap-2">
+              <span>{act.type}</span>
+              {act.avgCost !== undefined && <span>• ${act.avgCost}</span>}
+              {act.durationMin !== undefined && <span>• {act.durationMin}m</span>}
             </div>
-          </Card>
-
-          {/* Step 2: Trip Details */}
-          {selectedCity && (
-            <Card className="p-6 animate-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
-                  <span className="font-bold text-sky-600">2</span>
-                </div>
-                <div className="flex-1 space-y-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-1">Trip Details</h3>
-                    <p className="text-slate-500 mb-4 text-sm">Give your trip a name and dates.</p>
-                  </div>
-
-                  <Input 
-                    label="Trip Name" 
-                    placeholder={`e.g. Summer in ${selectedCity.name}`}
-                    value={tripName}
-                    onChange={(e) => setTripName(e.target.value)}
-                    required
-                  />
-
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Start Date</label>
-                      <input 
-                        type="date" 
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none transition-colors"
-                        value={dates.start}
-                        onChange={(e) => setDates({...dates, start: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">End Date</label>
-                      <input 
-                        type="date" 
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none transition-colors"
-                        value={dates.end}
-                        onChange={(e) => setDates({...dates, end: e.target.value})}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Description (Optional)</label>
-                    <textarea 
-                      className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none transition-colors min-h-[100px]"
-                      placeholder="What's this trip about?"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Submit Button */}
-          {selectedCity && (
-            <div className="flex justify-end pt-4 animate-in fade-in duration-500">
-              <Button type="submit" size="lg" isLoading={loading}>
-                Create Trip
-              </Button>
-            </div>
-          )}
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => onSelect(act)}>
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
-      </form>
+      ))}
     </div>
   );
 }
 
-export default function CreateTripPage() {
-  return (
-    <Suspense fallback={<div className="p-12 text-center">Loading...</div>}>
-      <CreateTripForm />
-    </Suspense>
-  );
-}
+// ==========================================
+// MAIN PAGE COMPONENT
+// ==========================================
 
+export default function CreateTripPage() {
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  
+  const [data, setData] = useState<TripData>({
+    name: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    stops: []
+  });
+
+  // --- Step 1 Handlers ---
+  const canProceedStep1 = data.name && data.startDate && data.endDate;
+
+  // --- Step 2 Handlers ---
+  const [showCitySearch, setShowCitySearch] = useState(false);
+  const [activeCityForActivity, setActiveCityForActivity] = useState<string | null>(null);
+
+  const addCity = (city: City) => {
+    setData(prev => ({
+      ...prev,
+      stops: [...prev.stops, { tempId: Math.random().toString(36), city, activities: [] }]
+    }));
+    setShowCitySearch(false);
+  };
+
+  const removeCity = (stopTempId: string) => {
+    setData(prev => ({
+      ...prev,
+      stops: prev.stops.filter(s => s.tempId !== stopTempId)
+    }));
+  };
+
+  const addActivity = (stopTempId: string, activity: Activity) => {
+    setData(prev => ({
+      ...prev,
+      stops: prev.stops.map(s => {
+        if (s.tempId === stopTempId) {
+          // Check if already added
+          if (s.activities.some(a => a.id === activity.id)) return s;
+          return {
+            ...s,
+            activities: [...s.activities, { ...activity, tempId: Math.random().toString(36) }]
+          };
+        }
+        return s;
+      })
+    }));
+    setActiveCityForActivity(null);
+  };
+
+  const removeActivity = (stopTempId: string, activityTempId: string) => {
+    setData(prev => ({
+      ...prev,
+      stops: prev.stops.map(s => {
+        if (s.tempId === stopTempId) {
+          return {
+            ...s,
+            activities: s.activities.filter(a => a.tempId !== activityTempId)
+          };
+        }
+        return s;
+      })
+    }));
+  };
+
+  // --- Submit Handler ---
+  async function handleSubmit() {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: data.name,
+        description: data.description,
+        startDate: new Date(data.startDate).toISOString(),
+        endDate: new Date(data.endDate).toISOString(),
+        stops: data.stops.map((stop, index) => ({
+          cityId: stop.city.id,
+          position: index,
+          activities: stop.activities.map((act, actIndex) => ({
+            activityId: act.id,
+            position: actIndex
+          }))
+        }))
+      };
+
+      const res = await createTrip(payload);
+      if (res.ok && res.data) {
+        router.push(`/trips/${res.data.id}`);
+      } else {
+        alert('Failed to create trip');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('An error occurred');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // --- Map Data for Steps 2 & 3 ---
+  const mapLocations = data.stops.map((stop, idx) => ({
+    id: stop.tempId,
+    name: stop.city.name,
+    lat: stop.city.lat,
+    lng: stop.city.lng,
+    description: `Stop ${idx + 1}`
+  }));
+
+  // ==========================================
+  // RENDER STEP 1: DETAILS
+  // ==========================================
+  if (step === 1) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-12">
+        <Link href="/dashboard" className="inline-flex items-center text-slate-500 hover:text-slate-900 mb-8">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+        </Link>
+        
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Create New Trip</h1>
+          <p className="text-slate-500">Start by giving your trip a name and dates.</p>
+        </div>
+
+        <Card className="p-8 space-y-6">
+          <Input 
+            label="Trip Name" 
+            placeholder="e.g. European Summer"
+            value={data.name}
+            onChange={(e) => setData({ ...data, name: e.target.value })}
+          />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Start Date</label>
+              <input 
+                type="date"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none transition-colors"
+                value={data.startDate}
+                onChange={(e) => setData({ ...data, startDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">End Date</label>
+              <input 
+                type="date"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none transition-colors"
+                value={data.endDate}
+                onChange={(e) => setData({ ...data, endDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+            <textarea 
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none transition-colors min-h-[100px]"
+              placeholder="What's the plan?"
+              value={data.description}
+              onChange={(e) => setData({ ...data, description: e.target.value })}
+            />
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setStep(2)} disabled={!canProceedStep1}>
+              Next: Build Itinerary <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // RENDER STEP 2: ITINERARY BUILDER
+  // ==========================================
+  if (step === 2) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            </Button>
+            <h1 className="text-xl font-bold text-slate-900">Build Itinerary</h1>
+          </div>
+          <Button onClick={() => setStep(3)} disabled={data.stops.length === 0}>
+            Preview Trip <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </header>
+
+        <div className="flex-1 grid lg:grid-cols-2 overflow-hidden h-[calc(100vh-73px)]">
+          {/* Left: Form Area */}
+          <div className="overflow-y-auto p-6 space-y-6 bg-slate-50">
+            {data.stops.map((stop, index) => (
+              <Card key={stop.tempId} className="p-5 relative group">
+                <button 
+                  onClick={() => removeCity(stop.tempId)}
+                  className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-bold text-sm">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-slate-900">{stop.city.name}</h3>
+                    <p className="text-sm text-slate-500">{stop.city.country}</p>
+                  </div>
+                </div>
+
+                {/* Activities List */}
+                <div className="space-y-3 pl-11">
+                  {stop.activities.map((act) => (
+                    <div key={act.tempId} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg">
+                      <div>
+                        <div className="font-medium text-slate-900">{act.name}</div>
+                        <div className="text-xs text-slate-500">{act.type} • {act.durationMin}m</div>
+                      </div>
+                      <button onClick={() => removeActivity(stop.tempId, act.tempId)} className="text-slate-300 hover:text-red-500">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {activeCityForActivity === stop.tempId ? (
+                    <div className="bg-white p-4 border border-slate-200 rounded-lg animate-in fade-in zoom-in-95 duration-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold">Select Activity</span>
+                        <Button variant="ghost" size="sm" onClick={() => setActiveCityForActivity(null)}>Cancel</Button>
+                      </div>
+                      <ActivitySelector cityId={stop.city.id} onSelect={(act) => addActivity(stop.tempId, act)} />
+                    </div>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="text-sky-600 hover:text-sky-700 hover:bg-sky-50" onClick={() => setActiveCityForActivity(stop.tempId)}>
+                      <Plus className="h-4 w-4 mr-2" /> Add Activity
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            ))}
+
+            {showCitySearch ? (
+              <Card className="p-6 animate-in fade-in slide-in-from-bottom-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-900">Add Destination</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setShowCitySearch(false)}>Cancel</Button>
+                </div>
+                <CitySearch onSelect={addCity} />
+              </Card>
+            ) : (
+              <Button variant="secondary" className="w-full py-8 border-2 border-dashed bg-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-900" onClick={() => setShowCitySearch(true)}>
+                <Plus className="h-5 w-5 mr-2" /> Add City
+              </Button>
+            )}
+          </div>
+
+          {/* Right: Map Area */}
+          <div className="h-full relative border-l border-slate-200">
+            <MapView locations={mapLocations} showPath={true} className="h-full w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // RENDER STEP 3: PREVIEW
+  // ==========================================
+  if (step === 3) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <Link href="#" onClick={() => setStep(2)} className="inline-flex items-center text-slate-500 hover:text-slate-900 mb-8">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Itinerary
+        </Link>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Header Preview */}
+          <div className="p-8 border-b border-slate-200 bg-slate-50">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">{data.name}</h1>
+            <div className="flex gap-4 text-slate-600 text-sm">
+              <span className="flex items-center"><Calendar className="h-4 w-4 mr-2" /> {formatDate(data.startDate)} — {formatDate(data.endDate)}</span>
+              <span className="flex items-center"><MapPin className="h-4 w-4 mr-2" /> {data.stops.length} Cities</span>
+            </div>
+            {data.description && <p className="mt-4 text-slate-600">{data.description}</p>}
+          </div>
+
+          {/* Itinerary Preview */}
+          <div className="p-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Itinerary Summary</h2>
+            <div className="space-y-8">
+              {data.stops.map((stop, idx) => (
+                <div key={stop.tempId} className="relative pl-8 border-l-2 border-slate-200 last:border-0">
+                  <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-sky-500 border-4 border-white shadow-sm" />
+                  <div className="mb-6">
+                    <h3 className="font-bold text-lg text-slate-900">{stop.city.name}, {stop.city.country}</h3>
+                    {stop.activities.length > 0 && (
+                      <div className="mt-3 grid gap-2">
+                        {stop.activities.map(act => (
+                          <div key={act.tempId} className="bg-slate-50 p-3 rounded-lg flex justify-between items-center text-sm">
+                            <span className="font-medium text-slate-700">{act.name}</span>
+                            <span className="text-slate-500">{act.type}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Footer */}
+          <div className="p-8 bg-slate-50 border-t border-slate-200 flex justify-end gap-4">
+            <Button variant="ghost" onClick={() => setStep(2)}>Edit Itinerary</Button>
+            <Button size="lg" onClick={handleSubmit} isLoading={submitting}>
+              {submitting ? 'Creating...' : 'Confirm & Create Trip'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
