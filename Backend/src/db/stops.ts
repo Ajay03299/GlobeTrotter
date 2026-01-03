@@ -22,3 +22,32 @@ export async function reorderStops(
     )
   );
 }
+
+export async function updateStop(stopId: string, input: unknown) {
+  const data = createStopSchema.partial().parse(input);
+
+  return prisma.stop.update({
+    where: { id: stopId },
+    data,
+  });
+}
+
+export async function deleteStop(stopId: string) {
+  return prisma.stop.delete({
+    where: { id: stopId },
+  });
+}
+
+export async function getTripStops(tripId: string) {
+  return prisma.stop.findMany({
+    where: { tripId },
+    include: {
+      city: true,
+      activities: {
+        include: { activity: true },
+        orderBy: { position: "asc" },
+      },
+    },
+    orderBy: { position: "asc" },
+  });
+}

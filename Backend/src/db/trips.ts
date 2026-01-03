@@ -36,3 +36,30 @@ export async function getUserTrips(userId: string) {
     orderBy: { createdAt: "desc" },
   });
 }
+
+export async function updateTrip(tripId: string, input: unknown) {
+  const data = createTripSchema.partial().parse(input);
+
+  return prisma.trip.update({
+    where: { id: tripId },
+    data,
+  });
+}
+
+export async function deleteTrip(tripId: string) {
+  return prisma.trip.delete({
+    where: { id: tripId },
+  });
+}
+
+export async function toggleTripPublic(tripId: string) {
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { isPublic: true },
+  });
+
+  return prisma.trip.update({
+    where: { id: tripId },
+    data: { isPublic: !trip?.isPublic },
+  });
+}
