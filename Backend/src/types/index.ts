@@ -126,9 +126,12 @@ export interface CreateTripInput {
   stops?: {
     cityId: string;
     position: number;
+    startDate?: string;
+    endDate?: string;
     activities?: {
       activityId: string;
       position?: number;
+      scheduledAt?: string;
     }[];
   }[];
 }

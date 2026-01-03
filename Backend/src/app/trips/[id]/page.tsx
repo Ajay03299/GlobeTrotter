@@ -61,7 +61,7 @@ export default function TripDetailsPage({ params }: { params: Promise<{ id: stri
           <div className="flex gap-2">
             <Link href={`/trips/${trip.id}/edit`}>
               <Button variant="secondary" size="sm">
-                <Edit className="h-4 w-4 mr-2" /> Edit
+                  <Edit className="h-4 w-4 mr-2" /> Edit
               </Button>
             </Link>
             <Link href={`/share/${trip.id}`}>
@@ -143,7 +143,7 @@ export default function TripDetailsPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6">
             <Card className="p-0 overflow-hidden h-[400px] lg:h-[calc(100vh-8rem)]">
-              <MapView locations={mapLocations} zoom={4} className="h-full w-full" />
+              <MapView locations={mapLocations} zoom={4} className="h-full w-full" showPath={true} />
             </Card>
           </div>
         </div>

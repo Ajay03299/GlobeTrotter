@@ -19,11 +19,14 @@ import Link from 'next/link';
 
 interface SelectedActivity extends Activity {
   tempId: string; // unique id for frontend list
+  scheduledAt?: string;
 }
 
 interface TripStop {
   tempId: string;
   city: City;
+  startDate?: string;
+  endDate?: string;
   activities: SelectedActivity[];
 }
 
@@ -270,6 +273,35 @@ export default function CreateTripPage() {
     }));
   };
 
+  const updateStopDate = (stopTempId: string, field: 'startDate' | 'endDate', value: string) => {
+    setData(prev => ({
+      ...prev,
+      stops: prev.stops.map(s => {
+        if (s.tempId === stopTempId) {
+          return { ...s, [field]: value };
+        }
+        return s;
+      })
+    }));
+  };
+
+  const updateActivityTime = (stopTempId: string, activityTempId: string, time: string) => {
+    setData(prev => ({
+      ...prev,
+      stops: prev.stops.map(s => {
+        if (s.tempId === stopTempId) {
+          return {
+            ...s,
+            activities: s.activities.map(a => 
+              a.tempId === activityTempId ? { ...a, scheduledAt: time } : a
+            )
+          };
+        }
+        return s;
+      })
+    }));
+  };
+
   // --- Submit Handler ---
   async function handleSubmit() {
     if (submitting) return;
@@ -283,9 +315,12 @@ export default function CreateTripPage() {
         stops: data.stops.map((stop, index) => ({
           cityId: stop.city.id,
           position: index,
+          startDate: stop.startDate ? new Date(stop.startDate).toISOString() : undefined,
+          endDate: stop.endDate ? new Date(stop.endDate).toISOString() : undefined,
           activities: stop.activities.map((act, actIndex) => ({
             activityId: act.id,
-            position: actIndex
+            position: actIndex,
+            scheduledAt: act.scheduledAt ? new Date(act.scheduledAt).toISOString() : undefined
           }))
         }))
       };
@@ -425,17 +460,50 @@ export default function CreateTripPage() {
                   </div>
                 </div>
 
+                {/* Dates Selection */}
+                <div className="mb-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 block mb-1">Arrival</label>
+                    <input 
+                      type="date" 
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 focus:border-sky-500 focus:outline-none"
+                      value={stop.startDate || ''}
+                      onChange={(e) => updateStopDate(stop.tempId, 'startDate', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 block mb-1">Departure</label>
+                    <input 
+                      type="date" 
+                      className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 focus:border-sky-500 focus:outline-none"
+                      value={stop.endDate || ''}
+                      onChange={(e) => updateStopDate(stop.tempId, 'endDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 {/* Activities List */}
                 <div className="space-y-3 pl-11">
                   {stop.activities.map((act) => (
-                    <div key={act.tempId} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg">
-                      <div>
-                        <div className="font-medium text-slate-900">{act.name}</div>
-                        <div className="text-xs text-slate-500">{act.type} • {act.durationMin}m</div>
+                    <div key={act.tempId} className="p-3 bg-white border border-slate-100 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <div className="font-medium text-slate-900">{act.name}</div>
+                          <div className="text-xs text-slate-500">{act.type} • {act.durationMin}m</div>
+                        </div>
+                        <button onClick={() => removeActivity(stop.tempId, act.tempId)} className="text-slate-300 hover:text-red-500">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button onClick={() => removeActivity(stop.tempId, act.tempId)} className="text-slate-300 hover:text-red-500">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex gap-2">
+                         <input 
+                            type="datetime-local"
+                            className="text-xs w-full px-2 py-1 rounded border border-slate-200 focus:border-sky-500 focus:outline-none"
+                            placeholder="Schedule time"
+                            value={act.scheduledAt || ''}
+                            onChange={(e) => updateActivityTime(stop.tempId, act.tempId, e.target.value)}
+                         />
+                      </div>
                     </div>
                   ))}
 
@@ -509,6 +577,11 @@ export default function CreateTripPage() {
                   <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-sky-500 border-4 border-white shadow-sm" />
                   <div className="mb-6">
                     <h3 className="font-bold text-lg text-slate-900">{stop.city.name}, {stop.city.country}</h3>
+                    {(stop.startDate || stop.endDate) && (
+                      <p className="text-sm text-slate-500 mb-2">
+                        {stop.startDate ? formatDate(stop.startDate) : 'TBD'} — {stop.endDate ? formatDate(stop.endDate) : 'TBD'}
+                      </p>
+                    )}
                     {stop.activities.length > 0 && (
                       <div className="mt-3 grid gap-2">
                         {stop.activities.map(act => (
@@ -527,7 +600,6 @@ export default function CreateTripPage() {
 
           {/* Action Footer */}
           <div className="p-8 bg-slate-50 border-t border-slate-200 flex justify-end gap-4">
-            <Button variant="ghost" onClick={() => setStep(2)}>Edit Itinerary</Button>
             <Button size="lg" onClick={handleSubmit} isLoading={submitting}>
               {submitting ? 'Creating...' : 'Confirm & Create Trip'}
             </Button>

@@ -98,7 +98,7 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            Hello, {user?.name?.split(' ')[0]}! 👋
+            Hello, {user?.name?.split(' ')[0]}! 
           </h1>
           <p className="text-slate-500 mt-1">Ready for your next adventure?</p>
         </div>

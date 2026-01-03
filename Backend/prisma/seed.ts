@@ -6,7 +6,6 @@ const prisma = new PrismaClient();
 async function main() {
   // Clear existing data
   await prisma.tripActivity.deleteMany();
-  await prisma.tripActivity.deleteMany();
   await prisma.costItem.deleteMany();
   await prisma.publicShare.deleteMany();
   await prisma.stop.deleteMany();
@@ -36,322 +35,63 @@ async function main() {
 
   console.log("Created users");
 
+  const cityData = [
+    { name: "Paris", country: "France", slug: "paris-france", lat: 48.8566, lng: 2.3522, costIndex: 85, popularity: 95 },
+    { name: "Tokyo", country: "Japan", slug: "tokyo-japan", lat: 35.6762, lng: 139.6503, costIndex: 90, popularity: 92 },
+    { name: "New York", country: "USA", slug: "new-york-usa", lat: 40.7128, lng: -74.006, costIndex: 95, popularity: 98 },
+    { name: "Barcelona", country: "Spain", slug: "barcelona-spain", lat: 41.3874, lng: 2.1686, costIndex: 75, popularity: 88 },
+    { name: "Bangkok", country: "Thailand", slug: "bangkok-thailand", lat: 13.7563, lng: 100.5018, costIndex: 40, popularity: 85 },
+    { name: "London", country: "UK", slug: "london-uk", lat: 51.5074, lng: -0.1278, costIndex: 92, popularity: 96 },
+    { name: "Dubai", country: "UAE", slug: "dubai-uae", lat: 25.2048, lng: 55.2708, costIndex: 88, popularity: 90 },
+    { name: "Rome", country: "Italy", slug: "rome-italy", lat: 41.9028, lng: 12.4964, costIndex: 78, popularity: 93 },
+    { name: "Singapore", country: "Singapore", slug: "singapore", lat: 1.3521, lng: 103.8198, costIndex: 94, popularity: 89 },
+    { name: "Istanbul", country: "Turkey", slug: "istanbul-turkey", lat: 41.0082, lng: 28.9784, costIndex: 55, popularity: 87 },
+    { name: "Sydney", country: "Australia", slug: "sydney-australia", lat: -33.8688, lng: 151.2093, costIndex: 89, popularity: 86 },
+    { name: "Seoul", country: "South Korea", slug: "seoul-south-korea", lat: 37.5665, lng: 126.9780, costIndex: 82, popularity: 84 },
+    { name: "Amsterdam", country: "Netherlands", slug: "amsterdam-netherlands", lat: 52.3676, lng: 4.9041, costIndex: 80, popularity: 88 },
+    { name: "Berlin", country: "Germany", slug: "berlin-germany", lat: 52.5200, lng: 13.4050, costIndex: 76, popularity: 85 },
+    { name: "Hong Kong", country: "China", slug: "hong-kong-china", lat: 22.3193, lng: 114.1694, costIndex: 91, popularity: 87 },
+    { name: "Los Angeles", country: "USA", slug: "los-angeles-usa", lat: 34.0522, lng: -118.2437, costIndex: 88, popularity: 91 },
+    { name: "Mumbai", country: "India", slug: "mumbai-india", lat: 19.0760, lng: 72.8777, costIndex: 45, popularity: 82 },
+    { name: "Cape Town", country: "South Africa", slug: "cape-town-south-africa", lat: -33.9249, lng: 18.4241, costIndex: 58, popularity: 80 },
+    { name: "Rio de Janeiro", country: "Brazil", slug: "rio-de-janeiro-brazil", lat: -22.9068, lng: -43.1729, costIndex: 60, popularity: 83 },
+    { name: "Moscow", country: "Russia", slug: "moscow-russia", lat: 55.7558, lng: 37.6173, costIndex: 65, popularity: 75 },
+    { name: "Mexico City", country: "Mexico", slug: "mexico-city-mexico", lat: 19.4326, lng: -99.1332, costIndex: 50, popularity: 78 },
+    { name: "Toronto", country: "Canada", slug: "toronto-canada", lat: 43.6510, lng: -79.3470, costIndex: 84, popularity: 81 },
+    { name: "San Francisco", country: "USA", slug: "san-francisco-usa", lat: 37.7749, lng: -122.4194, costIndex: 96, popularity: 89 },
+    { name: "Kyoto", country: "Japan", slug: "kyoto-japan", lat: 35.0116, lng: 135.7681, costIndex: 83, popularity: 85 },
+    { name: "Vienna", country: "Austria", slug: "vienna-austria", lat: 48.2082, lng: 16.3738, costIndex: 79, popularity: 84 },
+  ];
+
   // Create cities
-  const cities = await Promise.all([
-    prisma.city.create({
-      data: {
-        name: "Paris",
-        country: "France",
-        slug: "paris-france",
-        lat: 48.8566,
-        lng: 2.3522,
-        costIndex: 85,
-        popularity: 95,
-      },
-    }),
-    prisma.city.create({
-      data: {
-        name: "Tokyo",
-        country: "Japan",
-        slug: "tokyo-japan",
-        lat: 35.6762,
-        lng: 139.6503,
-        costIndex: 90,
-        popularity: 92,
-      },
-    }),
-    prisma.city.create({
-      data: {
-        name: "New York",
-        country: "USA",
-        slug: "new-york-usa",
-        lat: 40.7128,
-        lng: -74.006,
-        costIndex: 95,
-        popularity: 98,
-      },
-    }),
-    prisma.city.create({
-      data: {
-        name: "Barcelona",
-        country: "Spain",
-        slug: "barcelona-spain",
-        lat: 41.3874,
-        lng: 2.1686,
-        costIndex: 75,
-        popularity: 88,
-      },
-    }),
-    prisma.city.create({
-      data: {
-        name: "Bangkok",
-        country: "Thailand",
-        slug: "bangkok-thailand",
-        lat: 13.7563,
-        lng: 100.5018,
-        costIndex: 40,
-        popularity: 85,
-      },
-    }),
-  ]);
+  const cities = await Promise.all(
+    cityData.map(c => prisma.city.create({ data: c }))
+  );
+  console.log("Created 25 cities");
 
-  console.log("Created cities");
-
-  // Create activities
-  const activities = await Promise.all([
-    prisma.activity.create({
-      data: {
-        cityId: cities[0].id,
-        name: "Eiffel Tower Visit",
-        description: "Visit the iconic Eiffel Tower",
-        type: "SIGHTSEEING",
-        avgCost: 25,
-        durationMin: 120,
-      },
-    }),
-    prisma.activity.create({
-      data: {
-        cityId: cities[0].id,
-        name: "Louvre Museum",
-        description: "Explore the world's largest art museum",
-        type: "CULTURE",
-        avgCost: 20,
-        durationMin: 240,
-      },
-    }),
-    prisma.activity.create({
-      data: {
-        cityId: cities[1].id,
-        name: "Senso-ji Temple",
-        description: "Visit the famous Buddhist temple",
-        type: "CULTURE",
-        avgCost: 5,
-        durationMin: 90,
-      },
-    }),
-    prisma.activity.create({
-      data: {
-        cityId: cities[1].id,
-        name: "Sushi Making Class",
-        description: "Learn to make traditional sushi",
-        type: "FOOD",
-        avgCost: 80,
-        durationMin: 180,
-      },
-    }),
-    prisma.activity.create({
-      data: {
-        cityId: cities[2].id,
-        name: "Statue of Liberty",
-        description: "Visit the iconic statue",
-        type: "SIGHTSEEING",
-        avgCost: 20,
-        durationMin: 180,
-      },
-    }),
-    prisma.activity.create({
-      data: {
-        cityId: cities[2].id,
-        name: "Broadway Show",
-        description: "Watch a Broadway musical",
-        type: "CULTURE",
-        avgCost: 120,
-        durationMin: 180,
-      },
-    }),
-    prisma.activity.create({
-      data: {
-        cityId: cities[3].id,
-        name: "Sagrada Familia",
-        description: "Visit Gaudí's masterpiece",
-        type: "CULTURE",
-        avgCost: 30,
-        durationMin: 120,
-      },
-    }),
-    prisma.activity.create({
-      data: {
-        cityId: cities[4].id,
-        name: "Thai Massage",
-        description: "Experience traditional Thai massage",
-        type: "OTHER",
-        avgCost: 10,
-        durationMin: 90,
-      },
-    }),
-  ]);
-
-  console.log("Created activities");
-
-  // Create a trip for user1
-  const trip1 = await prisma.trip.create({
-    data: {
-      userId: user1.id,
-      name: "European Adventure",
-      description: "A wonderful journey through Europe",
-      startDate: new Date("2024-06-01"),
-      endDate: new Date("2024-06-15"),
-      isPublic: true,
-    },
-  });
-
-  // Create stops for trip1
-  const stop1 = await prisma.stop.create({
-    data: {
-      tripId: trip1.id,
-      cityId: cities[0].id,
-      startDate: new Date("2024-06-01"),
-      endDate: new Date("2024-06-05"),
-      position: 1,
-      notes: "Enjoying the city of lights",
-    },
-  });
-
-  const stop2 = await prisma.stop.create({
-    data: {
-      tripId: trip1.id,
-      cityId: cities[3].id,
-      startDate: new Date("2024-06-05"),
-      endDate: new Date("2024-06-10"),
-      position: 2,
-      notes: "Exploring Gaudí's architecture",
-    },
-  });
-
-  // Add activities to stops
-  await prisma.tripActivity.create({
-    data: {
-      stopId: stop1.id,
-      activityId: activities[0].id,
-      scheduledAt: new Date("2024-06-02"),
-      position: 1,
-    },
-  });
-
-  await prisma.tripActivity.create({
-    data: {
-      stopId: stop1.id,
-      activityId: activities[1].id,
-      scheduledAt: new Date("2024-06-03"),
-      position: 2,
-    },
-  });
-
-  await prisma.tripActivity.create({
-    data: {
-      stopId: stop2.id,
-      activityId: activities[6].id,
-      scheduledAt: new Date("2024-06-06"),
-      position: 1,
-    },
-  });
-
-  // Add cost items
-  await prisma.costItem.create({
-    data: {
-      tripId: trip1.id,
-      stopId: stop1.id,
-      category: "STAY",
-      amount: 150,
-      currency: "EUR",
-      description: "Hotel in Paris",
-    },
-  });
-
-  await prisma.costItem.create({
-    data: {
-      tripId: trip1.id,
-      stopId: stop1.id,
-      category: "ACTIVITY",
-      amount: 25,
-      currency: "EUR",
-      description: "Eiffel Tower ticket",
-    },
-  });
-
-  // Create public share for trip1
-  await prisma.publicShare.create({
-    data: {
-      tripId: trip1.id,
-      slug: "european-adventure-2024",
-    },
-  });
-
-  console.log("Created trip and related data");
-
-  // Create a trip for user2
-  const trip2 = await prisma.trip.create({
-    data: {
-      userId: user2.id,
-      name: "Asian Explorer",
-      description: "Exploring the wonders of Asia",
-      startDate: new Date("2024-07-01"),
-      endDate: new Date("2024-07-20"),
-      isPublic: false,
-    },
-  });
-
-  const stop3 = await prisma.stop.create({
-    data: {
-      tripId: trip2.id,
-      cityId: cities[1].id,
-      startDate: new Date("2024-07-01"),
-      endDate: new Date("2024-07-10"),
-      position: 1,
-      notes: "Traditional and modern Tokyo",
-    },
-  });
-
-  const stop4 = await prisma.stop.create({
-    data: {
-      tripId: trip2.id,
-      cityId: cities[4].id,
-      startDate: new Date("2024-07-10"),
-      endDate: new Date("2024-07-20"),
-      position: 2,
-      notes: "Relaxation in Thailand",
-    },
-  });
-
-  await prisma.tripActivity.create({
-    data: {
-      stopId: stop3.id,
-      activityId: activities[2].id,
-      scheduledAt: new Date("2024-07-02"),
-      position: 1,
-    },
-  });
-
-  await prisma.tripActivity.create({
-    data: {
-      stopId: stop3.id,
-      activityId: activities[3].id,
-      scheduledAt: new Date("2024-07-04"),
-      position: 2,
-    },
-  });
-
-  await prisma.tripActivity.create({
-    data: {
-      stopId: stop4.id,
-      activityId: activities[7].id,
-      scheduledAt: new Date("2024-07-12"),
-      position: 1,
-    },
-  });
-
-  await prisma.costItem.create({
-    data: {
-      tripId: trip2.id,
-      stopId: stop3.id,
-      category: "STAY",
-      amount: 100,
-      currency: "JPY",
-      description: "Hotel in Tokyo",
-    },
-  });
-
-  console.log("Created second trip and related data");
+  // Create 5 activities per city
+  const activityTypes = ["SIGHTSEEING", "CULTURE", "FOOD", "ADVENTURE", "OTHER"] as const;
+  
+  const activities = [];
+  for (const city of cities) {
+    for (let i = 0; i < 5; i++) {
+      activities.push(
+        prisma.activity.create({
+          data: {
+            cityId: city.id,
+            name: `${city.name} Activity ${i + 1}`,
+            description: `Experience the best of ${city.name} - Activity ${i + 1}`,
+            type: activityTypes[i % activityTypes.length],
+            avgCost: Math.floor(Math.random() * 100) + 10,
+            durationMin: [60, 90, 120, 180, 240][Math.floor(Math.random() * 5)],
+          },
+        })
+      );
+    }
+  }
+  
+  await Promise.all(activities);
+  console.log("Created activities (5 per city)");
 
   console.log("Seeding completed successfully!");
 }
