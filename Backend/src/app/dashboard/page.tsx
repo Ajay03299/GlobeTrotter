@@ -173,56 +173,32 @@ export default function DashboardPage() {
         </section>
 
         {/* 2. Popular Destinations + Search */}
-        <section className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <Compass className="h-5 w-5 text-sky-500" />
-              <h2 className="text-xl font-bold text-slate-900">Popular Destinations</h2>
-            </div>
-            
-            {/* Search Bar */}
-            <div className="mb-8">
-              <Card className="p-6 bg-gradient-to-r from-sky-50 to-indigo-50 border-sky-100">
-                <h3 className="font-semibold text-slate-900 mb-2">Where to next?</h3>
-                <CitySearch />
-              </Card>
-            </div>
-
-            {/* Popular Grid */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <DestinationCard city="Paris" country="France" image="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=400&q=80" />
-              <DestinationCard city="Tokyo" country="Japan" image="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=400&q=80" />
-              <DestinationCard city="New York" country="USA" image="https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=400&q=80" />
-              <DestinationCard city="Bali" country="Indonesia" image="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=400&q=80" />
-            </div>
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <Compass className="h-5 w-5 text-sky-500" />
+            <h2 className="text-xl font-bold text-slate-900">Popular Destinations</h2>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="mb-8 max-w-2xl">
+            <Card className="p-6 bg-gradient-to-r from-sky-50 to-indigo-50 border-sky-100">
+              <h3 className="font-semibold text-slate-900 mb-2">Where to next?</h3>
+              <CitySearch />
+            </Card>
           </div>
 
-          {/* Sidebar / Promo */}
-          <div className="space-y-6">
-            <Card className="p-6 bg-indigo-600 text-white border-none">
-              <h3 className="text-xl font-bold mb-2">Go Premium</h3>
-              <p className="text-indigo-100 mb-4 text-sm">
-                Unlock unlimited trips, offline maps, and smart budget tracking.
-              </p>
-              <Button variant="secondary" size="sm" className="w-full border-none bg-white text-indigo-600 hover:bg-indigo-50">
-                Upgrade Now
-              </Button>
-            </Card>
-            
-            <Card className="p-6">
-              <h3 className="font-bold text-slate-900 mb-4">Travel Tips</h3>
-              <ul className="space-y-3 text-sm text-slate-600">
-                <li className="flex gap-2">
-                  <span className="text-sky-500">•</span> Pack light and versatile
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-sky-500">•</span> Check visa requirements
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-sky-500">•</span> Download offline maps
-                </li>
-              </ul>
-            </Card>
+          {/* Horizontal Scrolling Gallery */}
+          <div className="relative">
+            <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scrollbar-hide -mx-6 px-6 sm:mx-0 sm:px-0">
+              <DestinationCard city="Paris" country="France" image="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80" />
+              <DestinationCard city="Tokyo" country="Japan" image="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80" />
+              <DestinationCard city="New York" country="USA" image="https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80" />
+              <DestinationCard city="Bali" country="Indonesia" image="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80" />
+              <DestinationCard city="Santorini" country="Greece" image="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80" />
+              <DestinationCard city="London" country="UK" image="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80" />
+              <DestinationCard city="Rome" country="Italy" image="https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80" />
+              <DestinationCard city="Dubai" country="UAE" image="https://images.unsplash.com/photo-1512453979798-5ea936a7fe11?auto=format&fit=crop&w=600&q=80" />
+            </div>
           </div>
         </section>
 
@@ -251,12 +227,12 @@ export default function DashboardPage() {
 
 function DestinationCard({ city, country, image }: { city: string; country: string; image: string }) {
   return (
-    <div className="group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer">
+    <div className="group relative rounded-xl overflow-hidden aspect-[3/4] min-w-[200px] sm:min-w-[240px] cursor-pointer snap-start flex-shrink-0">
       <img src={image} alt={city} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
       <div className="absolute bottom-3 left-3 text-white">
-        <h4 className="font-bold">{city}</h4>
-        <p className="text-xs opacity-90">{country}</p>
+        <h4 className="font-bold text-lg">{city}</h4>
+        <p className="text-sm opacity-90">{country}</p>
       </div>
       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button size="sm" className="bg-white/90 text-slate-900 hover:bg-white h-8 text-xs">
