@@ -8,20 +8,25 @@ import { LoginSchema } from "@/lib/validators";
 import { signUserToken, setAuthCookie } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  const parsed = LoginSchema.safeParse(body);
-  if (!parsed.success) return fail("Invalid input", 400, parsed.error.flatten());
+  try {
+    const body = await req.json().catch(() => null);
+    const parsed = LoginSchema.safeParse(body);
+    if (!parsed.success) return fail("Invalid input", 400, parsed.error.flatten());
 
-  const { email, password } = parsed.data;
+    const { email, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return fail("Invalid credentials", 401);
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return fail("Invalid credentials", 401);
 
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) return fail("Invalid credentials", 401);
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return fail("Invalid credentials", 401);
 
-  const token = await signUserToken({ userId: user.id, email: user.email });
-  await setAuthCookie(token);
+    const token = await signUserToken({ userId: user.id, email: user.email });
+    await setAuthCookie(token);
 
-  return ok({ id: user.id, name: user.name, email: user.email });
+    return ok({ id: user.id, name: user.name, email: user.email });
+  } catch (error) {
+    console.error("Login error:", error);
+    return fail("Login failed", 500);
+  }
 }
