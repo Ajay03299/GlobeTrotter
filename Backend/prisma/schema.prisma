@@ -24,9 +24,11 @@ enum CostCategory {
   OTHER
 }
 
-/* =========================
-   USER
-========================= */
+/**
+ * =========================
+ * USER
+ * =========================
+ */
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -35,57 +37,63 @@ model User {
   image     String?
   createdAt DateTime @default(now())
 
-  trips     Trip[]
+  trips Trip[]
 }
 
-/* =========================
-   TRIP
-========================= */
+/**
+ * =========================
+ * TRIP
+ * =========================
+ */
 model Trip {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   name        String
   description String?
   startDate   DateTime?
   endDate     DateTime?
   coverPhoto  String?
-  isPublic    Boolean  @default(false)
+  isPublic    Boolean   @default(false)
 
   stops       Stop[]
   costItems   CostItem[]
   publicShare PublicShare?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
-/* =========================
-   CITY (searchable)
-========================= */
+/**
+ * =========================
+ * CITY (searchable)
+ * =========================
+ */
 model City {
-  id          String @id @default(cuid())
-  name        String
-  country     String
-  slug        String @unique
-  lat         Float
-  lng         Float
-  costIndex   Int?
-  popularity  Int?
+  id         String @id @default(cuid())
+  name       String
+  country    String
+  slug       String @unique
+  lat        Float
+  lng        Float
+  costIndex  Int?
+  popularity Int?
 
-  stops       Stop[]
-  activities  Activity[]
+  stops      Stop[]
+  activities Activity[]
 }
 
-/* =========================
-   STOP (city inside trip)
-========================= */
+/**
+ * =========================
+ * STOP (city inside trip)
+ * =========================
+ */
 model Stop {
-  id        String   @id @default(cuid())
-  tripId    String
-  trip      Trip     @relation(fields: [tripId], references: [id])
-  cityId    String
-  city      City     @relation(fields: [cityId], references: [id])
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id])
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id])
 
   startDate DateTime?
   endDate   DateTime?
@@ -98,13 +106,15 @@ model Stop {
   @@index([tripId, position])
 }
 
-/* =========================
-   ACTIVITY (searchable)
-========================= */
+/**
+ * =========================
+ * ACTIVITY (searchable)
+ * =========================
+ */
 model Activity {
-  id          String       @id @default(cuid())
-  cityId      String?
-  city        City?        @relation(fields: [cityId], references: [id])
+  id     String  @id @default(cuid())
+  cityId String?
+  city   City?   @relation(fields: [cityId], references: [id])
 
   name        String
   description String?
@@ -112,45 +122,51 @@ model Activity {
   avgCost     Float?
   durationMin Int?
 
-  tripLinks   TripActivity[]
+  tripLinks TripActivity[]
 }
 
-/* =========================
-   ACTIVITY IN A STOP
-========================= */
+/**
+ * =========================
+ * ACTIVITY IN A STOP
+ * =========================
+ */
 model TripActivity {
-  id          String   @id @default(cuid())
-  stopId      String
-  stop        Stop     @relation(fields: [stopId], references: [id])
-  activityId  String
-  activity    Activity @relation(fields: [activityId], references: [id])
+  id         String   @id @default(cuid())
+  stopId     String
+  stop       Stop     @relation(fields: [stopId], references: [id])
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id])
 
   scheduledAt DateTime?
   position    Int?
   notes       String?
 }
 
-/* =========================
-   COST / BUDGET
-========================= */
+/**
+ * =========================
+ * COST / BUDGET
+ * =========================
+ */
 model CostItem {
-  id          String       @id @default(cuid())
-  tripId      String?
-  trip        Trip?        @relation(fields: [tripId], references: [id])
-  stopId      String?
-  stop        Stop?        @relation(fields: [stopId], references: [id])
+  id     String  @id @default(cuid())
+  tripId String?
+  trip   Trip?   @relation(fields: [tripId], references: [id])
+  stopId String?
+  stop   Stop?   @relation(fields: [stopId], references: [id])
 
   category    CostCategory
   amount      Float
-  currency    String @default("INR")
+  currency    String       @default("INR")
   description String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
-/* =========================
-   PUBLIC SHARING
-========================= */
+/**
+ * =========================
+ * PUBLIC SHARING
+ * =========================
+ */
 model PublicShare {
   id        String   @id @default(cuid())
   tripId    String   @unique

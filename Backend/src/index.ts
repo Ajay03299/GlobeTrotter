@@ -2,16 +2,23 @@ import { createTrip } from "./db/trips";
 import { prisma } from "./db/prisma";
 
 async function run() {
-  // Create a test user first
-  const user = await prisma.user.create({
-    data: {
-      email: "test@example.com",
-      password: "hashedpassword123",
-      name: "Test User",
-    },
+  // Find or create a test user
+  let user = await prisma.user.findUnique({
+    where: { email: "test@example.com" },
   });
 
-  console.log("Created user:", user);
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: "test@example.com",
+        password: "hashedpassword123",
+        name: "Test User",
+      },
+    });
+    console.log("Created user:", user);
+  } else {
+    console.log("Using existing user:", user);
+  }
 
   // Now create a trip for this user
   const trip = await createTrip({
