@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plane, Plus, LogOut, Compass, MapPin, Calendar, ArrowRight, Globe } from 'lucide-react';
+import { Plane, Plus, LogOut, Compass, Calendar, ArrowRight, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card';
 import { CitySearch } from '@/components/trips/CitySearch';
@@ -17,6 +19,13 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const autoplay = useRef(
+    Autoplay({ delay: 2000, stopOnInteraction: false, stopOnMouseEnter: true })
+  );
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: true, align: 'start', skipSnaps: false },
+    [autoplay.current]
+  );
 
   useEffect(() => {
     async function loadData() {
@@ -64,6 +73,27 @@ export default function DashboardPage() {
       description: `Visited on ${t.name}`
     })) || []
   );
+
+  const featuredDestinations = [
+    { city: 'Paris', country: 'France', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80' },
+    { city: 'Tokyo', country: 'Japan', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80' },
+    { city: 'New York', country: 'USA', image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80' },
+    { city: 'Bali', country: 'Indonesia', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80' },
+    { city: 'Santorini', country: 'Greece', image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80' },
+    { city: 'London', country: 'UK', image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80' },
+    { city: 'Rome', country: 'Italy', image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80' },
+    { city: 'Dubai', country: 'UAE', image: 'https://images.unsplash.com/photo-1512453979798-5ea936a7fe11?auto=format&fit=crop&w=600&q=80' }
+  ];
+
+  const scrollCarousel = (direction: 'next' | 'prev') => {
+    if (!emblaApi) return;
+    autoplay.current?.reset();
+    if (direction === 'next') {
+      emblaApi.scrollNext();
+    } else {
+      emblaApi.scrollPrev();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -185,15 +215,38 @@ export default function DashboardPage() {
 
           {/* Horizontal Scrolling Gallery */}
           <div className="relative">
-            <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scrollbar-hide -mx-6 px-6 sm:mx-0 sm:px-0">
-              <DestinationCard city="Paris" country="France" image="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80" />
-              <DestinationCard city="Tokyo" country="Japan" image="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80" />
-              <DestinationCard city="New York" country="USA" image="https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80" />
-              <DestinationCard city="Bali" country="Indonesia" image="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80" />
-              <DestinationCard city="Santorini" country="Greece" image="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80" />
-              <DestinationCard city="London" country="UK" image="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80" />
-              <DestinationCard city="Rome" country="Italy" image="https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80" />
-              <DestinationCard city="Dubai" country="UAE" image="https://images.unsplash.com/photo-1512453979798-5ea936a7fe11?auto=format&fit=crop&w=600&q=80" />
+            <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-slate-50 to-transparent pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none" />
+
+            <div ref={emblaRef} className="overflow-hidden">
+              <div className="flex gap-4 pb-4 snap-x snap-mandatory -mx-6 px-6 sm:mx-0 sm:px-0">
+                {featuredDestinations.map((dest) => (
+                  <DestinationCard key={dest.city} city={dest.city} country={dest.country} image={dest.image} />
+                ))}
+              </div>
+            </div>
+
+            <div className="pointer-events-none absolute inset-y-0 left-2 flex items-center">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="rounded-full shadow-sm bg-white/90 hover:bg-white pointer-events-auto"
+                aria-label="Previous destinations"
+                onClick={() => scrollCarousel('prev')}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="rounded-full shadow-sm bg-white/90 hover:bg-white pointer-events-auto"
+                aria-label="Next destinations"
+                onClick={() => scrollCarousel('next')}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </section>
