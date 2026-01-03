@@ -128,32 +128,34 @@ export default function DashboardPage() {
           {trips.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {trips.map((trip) => (
-                <Card key={trip.id} variant="bordered" className="hover:shadow-md transition-shadow cursor-pointer group">
-                  <div className="h-32 bg-slate-100 rounded-t-xl relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-sky-400 to-indigo-500 opacity-20 group-hover:opacity-30 transition-opacity" />
-                    <div className="absolute bottom-4 left-4">
-                      <h3 className="text-lg font-bold text-slate-900">{trip.name}</h3>
-                      <p className="text-sm text-slate-600">{formatDate(trip.startDate || '')}</p>
+                <Link key={trip.id} href={`/trips/${trip.id}`}>
+                  <Card variant="bordered" className="hover:shadow-md transition-shadow cursor-pointer group h-full">
+                    <div className="h-32 bg-slate-100 rounded-t-xl relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-sky-400 to-indigo-500 opacity-20 group-hover:opacity-30 transition-opacity" />
+                      <div className="absolute bottom-4 left-4">
+                        <h3 className="text-lg font-bold text-slate-900">{trip.name}</h3>
+                        <p className="text-sm text-slate-600">{formatDate(trip.startDate || '')}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-sm text-slate-500 line-clamp-2 mb-4">
-                      {trip.description || 'No description provided.'}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {trip.stops?.slice(0, 3).map((stop) => (
-                        <span key={stop.id} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full font-medium">
-                          {stop.city?.name}
-                        </span>
-                      ))}
-                      {(trip.stops?.length || 0) > 3 && (
-                        <span className="text-xs text-slate-400 self-center">
-                          +{ (trip.stops?.length || 0) - 3 } more
-                        </span>
-                      )}
+                    <div className="p-4">
+                      <p className="text-sm text-slate-500 line-clamp-2 mb-4">
+                        {trip.description || 'No description provided.'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {trip.stops?.slice(0, 3).map((stop) => (
+                          <span key={stop.id} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full font-medium">
+                            {stop.city?.name}
+                          </span>
+                        ))}
+                        {(trip.stops?.length || 0) > 3 && (
+                          <span className="text-xs text-slate-400 self-center">
+                            +{ (trip.stops?.length || 0) - 3 } more
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))}
             </div>
           ) : (
