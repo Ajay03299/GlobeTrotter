@@ -1,14 +1,159 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+}
+
+enum ActivityType {
+  SIGHTSEEING
+  FOOD
+  ADVENTURE
+  CULTURE
+  TRANSPORT
+  OTHER
+}
+
+enum CostCategory {
+  TRANSPORT
+  STAY
+  ACTIVITY
+  MEAL
+  OTHER
+}
+
+/* =========================
+   USER
+========================= */
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  image     String?
+  createdAt DateTime @default(now())
+
+  trips     Trip[]
+}
+
+/* =========================
+   TRIP
+========================= */
+model Trip {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  coverPhoto  String?
+  isPublic    Boolean  @default(false)
+
+  stops       Stop[]
+  costItems   CostItem[]
+  publicShare PublicShare?
+
+  createdAt   DateTime @default(now())
+}
+
+/* =========================
+   CITY (searchable)
+========================= */
+model City {
+  id          String @id @default(cuid())
+  name        String
+  country     String
+  slug        String @unique
+  lat         Float
+  lng         Float
+  costIndex   Int?
+  popularity  Int?
+
+  stops       Stop[]
+  activities  Activity[]
+}
+
+/* =========================
+   STOP (city inside trip)
+========================= */
+model Stop {
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  cityId    String
+  city      City     @relation(fields: [cityId], references: [id])
+
+  startDate DateTime?
+  endDate   DateTime?
+  position  Int
+  notes     String?
+
+  activities TripActivity[]
+  costItems  CostItem[]
+
+  @@index([tripId, position])
+}
+
+/* =========================
+   ACTIVITY (searchable)
+========================= */
+model Activity {
+  id          String       @id @default(cuid())
+  cityId      String?
+  city        City?        @relation(fields: [cityId], references: [id])
+
+  name        String
+  description String?
+  type        ActivityType
+  avgCost     Float?
+  durationMin Int?
+
+  tripLinks   TripActivity[]
+}
+
+/* =========================
+   ACTIVITY IN A STOP
+========================= */
+model TripActivity {
+  id          String   @id @default(cuid())
+  stopId      String
+  stop        Stop     @relation(fields: [stopId], references: [id])
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id])
+
+  scheduledAt DateTime?
+  position    Int?
+  notes       String?
+}
+
+/* =========================
+   COST / BUDGET
+========================= */
+model CostItem {
+  id          String       @id @default(cuid())
+  tripId      String?
+  trip        Trip?        @relation(fields: [tripId], references: [id])
+  stopId      String?
+  stop        Stop?        @relation(fields: [stopId], references: [id])
+
+  category    CostCategory
+  amount      Float
+  currency    String @default("INR")
+  description String?
+
+  createdAt   DateTime @default(now())
+}
+
+/* =========================
+   PUBLIC SHARING
+========================= */
+model PublicShare {
+  id        String   @id @default(cuid())
+  tripId    String   @unique
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  slug      String   @unique
+  createdAt DateTime @default(now())
 }
