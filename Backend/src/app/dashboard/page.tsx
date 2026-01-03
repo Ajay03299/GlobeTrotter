@@ -212,8 +212,21 @@ export default function DashboardPage() {
             </Link>
           </div>
           
-          <Card className="overflow-hidden p-0 h-[400px] border-2 border-slate-200">
-            <MapView locations={visitedLocations} />
+          <Card className="overflow-hidden p-0 h-[400px] border-2 border-slate-200 relative">
+            {visitedLocations.length > 0 ? (
+              <MapView 
+                locations={visitedLocations} 
+                className="h-full w-full rounded-none"
+                zoom={visitedLocations.length > 0 ? 3 : 2}
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-sky-50 to-indigo-50">
+                <div className="text-center">
+                  <Globe className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500">Your trips will appear on the map</p>
+                </div>
+              </div>
+            )}
           </Card>
         </section>
       </main>
@@ -223,18 +236,20 @@ export default function DashboardPage() {
 
 function DestinationCard({ city, country, image }: { city: string; country: string; image: string }) {
   return (
-    <div className="group relative rounded-xl overflow-hidden aspect-[3/4] min-w-[200px] sm:min-w-[240px] cursor-pointer snap-start flex-shrink-0">
-      <img src={image} alt={city} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-      <div className="absolute bottom-3 left-3 text-white">
-        <h4 className="font-bold text-lg">{city}</h4>
-        <p className="text-sm opacity-90">{country}</p>
+    <Link href="/trips/new">
+      <div className="group relative rounded-xl overflow-hidden aspect-[3/4] min-w-[200px] sm:min-w-[240px] cursor-pointer snap-start flex-shrink-0">
+        <img src={image} alt={city} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <div className="absolute bottom-3 left-3 text-white">
+          <h4 className="font-bold text-lg">{city}</h4>
+          <p className="text-sm opacity-90">{country}</p>
+        </div>
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button size="sm" className="bg-white/90 text-slate-900 hover:bg-white h-8 text-xs">
+            Plan Trip
+          </Button>
+        </div>
       </div>
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button size="sm" className="bg-white/90 text-slate-900 hover:bg-white h-8 text-xs">
-          Plan Trip
-        </Button>
-      </div>
-    </div>
+    </Link>
   );
 }

@@ -1,17 +1,73 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import MapView from '@/components/maps/MapView';
 import { Button } from '@/components/ui/Button';
+import { getMe, getTrips } from '@/lib/api';
+import type { Trip } from '@/types';
+
+interface MapLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  description?: string;
+}
 
 export default function FullMapPage() {
-  // Mock locations for now
-  const locations = [
-    { id: '1', name: 'Paris', lat: 48.8566, lng: 2.3522, description: 'Visited June 2025' },
-    { id: '2', name: 'Tokyo', lat: 35.6762, lng: 139.6503, description: 'Upcoming Trip' },
-    { id: '3', name: 'New York', lat: 40.7128, lng: -74.0060, description: 'Visited 2024' },
-  ];
+  const router = useRouter();
+  const [locations, setLocations] = useState<MapLocation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadTripsMap() {
+      try {
+        // Check auth
+        const meRes = await getMe();
+        if (!meRes.ok) {
+          router.push('/login');
+          return;
+        }
+
+        // Load trips
+        const tripsRes = await getTrips();
+        if (tripsRes.ok && tripsRes.data) {
+          const mapLocs: MapLocation[] = [];
+          tripsRes.data.forEach((trip: Trip) => {
+            trip.stops?.forEach((stop, idx) => {
+              if (stop.city) {
+                mapLocs.push({
+                  id: stop.id,
+                  name: stop.city.name,
+                  lat: stop.city.lat,
+                  lng: stop.city.lng,
+                  description: `${trip.name} - Stop ${idx + 1}`
+                });
+              }
+            });
+          });
+          setLocations(mapLocs);
+        }
+      } catch (e) {
+        console.error(e);
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadTripsMap();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col">

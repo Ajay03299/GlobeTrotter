@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Plus, MapPin, Calendar, Trash2, Check, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { CitySearch } from '@/components/trips/CitySearch';
 import MapView from '@/components/maps/MapView';
-import { createTrip, getActivities, getCities } from '@/lib/api';
+import { createTrip, getActivities, getCities, getMe } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import type { City, Activity } from '@/types';
 import Link from 'next/link';
@@ -164,8 +164,10 @@ function ActivitySelector({ cityId, onSelect, onCancel }: { cityId: string; onSe
 
 export default function CreateTripPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const [data, setData] = useState<TripData>({
     name: '',
@@ -174,6 +176,44 @@ export default function CreateTripPage() {
     endDate: '',
     stops: []
   });
+
+  // Check auth on mount
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await getMe();
+        if (!res.ok) {
+          router.push('/login');
+          return;
+        }
+
+        // Check for pre-selected city from query params
+        const cityId = searchParams.get('city');
+        if (cityId) {
+          try {
+            const citiesRes = await getCities();
+            if (citiesRes.ok && citiesRes.data) {
+              const selectedCity = citiesRes.data.find(c => c.id === cityId);
+              if (selectedCity) {
+                setData(prev => ({
+                  ...prev,
+                  stops: [{ tempId: Math.random().toString(36), city: selectedCity, activities: [] }]
+                }));
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load city:', e);
+          }
+        }
+
+        setLoading(false);
+      } catch (e) {
+        console.error(e);
+        router.push('/login');
+      }
+    }
+    checkAuth();
+  }, [router, searchParams]);
 
   // --- Step 1 Handlers ---
   const canProceedStep1 = data.name && data.startDate && data.endDate;
@@ -272,6 +312,14 @@ export default function CreateTripPage() {
     lng: stop.city.lng,
     description: `Stop ${idx + 1}`
   }));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+      </div>
+    );
+  }
 
   // ==========================================
   // RENDER STEP 1: DETAILS

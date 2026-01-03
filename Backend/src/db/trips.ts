@@ -51,6 +51,14 @@ export async function getUserTrips(userId: string) {
   return prisma.trip.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
+    include: {
+      stops: {
+        orderBy: { position: "asc" },
+        include: {
+          city: true,
+        },
+      },
+    },
   });
 }
 
