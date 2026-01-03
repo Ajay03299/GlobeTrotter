@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { CitySearch } from '@/components/trips/CitySearch';
 import MapView from '@/components/maps/MapView';
-import { createTrip, getActivities } from '@/lib/api';
+import { createTrip, getActivities, getCities } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import type { City, Activity } from '@/types';
 import Link from 'next/link';
