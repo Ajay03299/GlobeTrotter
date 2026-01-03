@@ -36,12 +36,74 @@ interface TripData {
 }
 
 // ==========================================
+// CITY SELECTOR COMPONENT
+// ==========================================
+
+function CitySelector({ onSelect, onCancel }: { onSelect: (city: City) => void; onCancel: () => void }) {
+  const [cities, setCities] = useState<City[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCityId, setSelectedCityId] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchCities() {
+      setLoading(true);
+      try {
+        const res = await getCities(); // Fetch default list
+        if (res.ok && res.data) {
+          setCities(res.data);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCities();
+  }, []);
+
+  const handleSelect = () => {
+    const city = cities.find(c => c.id === selectedCityId);
+    if (city) {
+      onSelect(city);
+    }
+  };
+
+  if (loading) return <div className="text-center py-4"><Loader2 className="h-6 w-6 animate-spin mx-auto text-sky-600" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Select a Destination</label>
+        <select 
+          className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-sky-500"
+          value={selectedCityId}
+          onChange={(e) => setSelectedCityId(e.target.value)}
+        >
+          <option value="">-- Choose a city --</option>
+          {cities.map(city => (
+            <option key={city.id} value={city.id}>
+              {city.name}, {city.country}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <div className="flex justify-end gap-3">
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button onClick={handleSelect} disabled={!selectedCityId}>Add City</Button>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
 // ACTIVITY SELECTOR COMPONENT
 // ==========================================
 
-function ActivitySelector({ cityId, onSelect }: { cityId: string; onSelect: (act: Activity) => void }) {
+function ActivitySelector({ cityId, onSelect, onCancel }: { cityId: string; onSelect: (act: Activity) => void; onCancel: () => void }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedActivityId, setSelectedActivityId] = useState<string>("");
 
   useEffect(() => {
     async function fetchActivities() {
@@ -60,26 +122,38 @@ function ActivitySelector({ cityId, onSelect }: { cityId: string; onSelect: (act
     if (cityId) fetchActivities();
   }, [cityId]);
 
+  const handleAdd = () => {
+    const act = activities.find(a => a.id === selectedActivityId);
+    if (act) {
+      onSelect(act);
+    }
+  };
+
   if (loading) return <div className="text-center py-4 text-sm text-slate-500">Loading activities...</div>;
   if (activities.length === 0) return <div className="text-center py-4 text-sm text-slate-500">No activities found for this city.</div>;
 
   return (
-    <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-      {activities.map(act => (
-        <div key={act.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
-          <div>
-            <div className="font-medium text-slate-900">{act.name}</div>
-            <div className="text-xs text-slate-500 flex gap-2">
-              <span>{act.type}</span>
-              {act.avgCost !== undefined && <span>• ${act.avgCost}</span>}
-              {act.durationMin !== undefined && <span>• {act.durationMin}m</span>}
-            </div>
-          </div>
-          <Button size="sm" variant="ghost" onClick={() => onSelect(act)}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      ))}
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Select an Activity</label>
+        <select
+          className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-sky-500"
+          value={selectedActivityId}
+          onChange={(e) => setSelectedActivityId(e.target.value)}
+        >
+          <option value="">-- Choose an activity --</option>
+          {activities.map(act => (
+            <option key={act.id} value={act.id}>
+              {act.name} ({act.type}) - ${act.avgCost}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <Button variant="ghost" onClick={onCancel} size="sm">Cancel</Button>
+        <Button onClick={handleAdd} disabled={!selectedActivityId} size="sm">Add Activity</Button>
+      </div>
     </div>
   );
 }
@@ -319,11 +393,11 @@ export default function CreateTripPage() {
 
                   {activeCityForActivity === stop.tempId ? (
                     <div className="bg-white p-4 border border-slate-200 rounded-lg animate-in fade-in zoom-in-95 duration-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold">Select Activity</span>
-                        <Button variant="ghost" size="sm" onClick={() => setActiveCityForActivity(null)}>Cancel</Button>
-                      </div>
-                      <ActivitySelector cityId={stop.city.id} onSelect={(act) => addActivity(stop.tempId, act)} />
+                      <ActivitySelector 
+                        cityId={stop.city.id} 
+                        onSelect={(act) => addActivity(stop.tempId, act)} 
+                        onCancel={() => setActiveCityForActivity(null)}
+                      />
                     </div>
                   ) : (
                     <Button variant="ghost" size="sm" className="text-sky-600 hover:text-sky-700 hover:bg-sky-50" onClick={() => setActiveCityForActivity(stop.tempId)}>
@@ -336,11 +410,10 @@ export default function CreateTripPage() {
 
             {showCitySearch ? (
               <Card className="p-6 animate-in fade-in slide-in-from-bottom-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-slate-900">Add Destination</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setShowCitySearch(false)}>Cancel</Button>
-                </div>
-                <CitySearch onSelect={addCity} />
+                <CitySelector 
+                  onSelect={addCity} 
+                  onCancel={() => setShowCitySearch(false)}
+                />
               </Card>
             ) : (
               <Button variant="secondary" className="w-full py-8 border-2 border-dashed bg-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-900" onClick={() => setShowCitySearch(true)}>

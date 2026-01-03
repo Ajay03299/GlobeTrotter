@@ -13,7 +13,8 @@ export async function GET(request: Request) {
           { country: { contains: query } }
         ]
       } : undefined,
-      take: 10
+      orderBy: { popularity: 'desc' },
+      take: 50
     });
 
     return NextResponse.json({ ok: true, data: cities });
