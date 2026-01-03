@@ -1,7 +1,7 @@
 import type { ApiResponse, User, Trip, City, CreateTripInput } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true' || false;
+const DEV_MODE = false; // Always use real APIs
 
 const MOCK_USER: User = {
   id: 'dev-user-1',

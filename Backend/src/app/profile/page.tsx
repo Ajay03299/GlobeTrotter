@@ -1,12 +1,50 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, User, Mail, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { getMe, logout } from '@/lib/api';
+import type { User as UserType } from '@/types';
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await getMe();
+        if (res.ok && res.data) {
+          setUser(res.data);
+        } else {
+          router.push('/login');
+        }
+      } catch (e) {
+        console.error(e);
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadUser();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <div className="p-12 text-center">Failed to load profile</div>;
+  }
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
@@ -34,15 +72,27 @@ export default function ProfilePage() {
               <User className="h-10 w-10 text-sky-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Dev User</h2>
+              <h2 className="text-2xl font-bold text-slate-900">{user?.name || 'User'}</h2>
               <p className="text-slate-500">Travel Enthusiast</p>
+              <div className="flex gap-3 mt-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={async () => {
+                    await logout();
+                    router.push('/login');
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" /> Logout
+                </Button>
+              </div>
             </div>
           </div>
 
           <form className="space-y-6">
             <div className="grid gap-6">
-              <Input label="Display Name" defaultValue="Dev User" />
-              <Input label="Email Address" defaultValue="dev@globetrotter.com" disabled />
+              <Input label="Display Name" defaultValue={user?.name || ''} />
+              <Input label="Email Address" defaultValue={user?.email || ''} disabled />
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">Bio</label>
                 <textarea 

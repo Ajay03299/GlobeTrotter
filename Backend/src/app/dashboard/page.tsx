@@ -8,18 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card';
 import { CitySearch } from '@/components/trips/CitySearch';
 import MapView from '@/components/maps/MapView';
-import { getMe, getTrips } from '@/lib/api';
+import { getMe, getTrips, logout } from '@/lib/api';
 import type { User, Trip } from '@/types';
 import { formatDate } from '@/lib/utils';
-
-// ⚠️ DEV MODE
-const SKIP_AUTH = true;
-
-const MOCK_USER: User = {
-  id: 'dev-user',
-  email: 'dev@globetrotter.com',
-  name: 'Dev User',
-};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -31,14 +22,10 @@ export default function DashboardPage() {
     async function loadData() {
       // Auth check
       let currentUser = null;
-      if (SKIP_AUTH) {
-        currentUser = MOCK_USER;
-      } else {
-        try {
-          const res = await getMe();
-          if (res.ok && res.data) currentUser = res.data;
-        } catch {}
-      }
+      try {
+        const res = await getMe();
+        if (res.ok && res.data) currentUser = res.data;
+      } catch {}
 
       if (!currentUser) {
         router.push('/login');
@@ -91,9 +78,16 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-slate-600 hidden sm:block">
-              {user?.name}
+              {user?.name || 'User'}
             </span>
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={async () => {
+                await logout();
+                router.push('/login');
+              }}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

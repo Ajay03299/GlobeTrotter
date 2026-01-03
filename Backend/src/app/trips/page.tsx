@@ -1,33 +1,51 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, MapPin, MoreVertical, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { getTrips } from '@/lib/api';
+import { getTrips, getMe } from '@/lib/api';
 import type { Trip } from '@/types';
 import { formatDate } from '@/lib/utils';
 
 export default function MyTripsPage() {
+  const router = useRouter();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadTrips() {
+    async function loadData() {
       try {
+        // Check auth
+        const meRes = await getMe();
+        if (!meRes.ok) {
+          router.push('/login');
+          return;
+        }
+
+        // Load trips
         const res = await getTrips();
         if (res.ok && res.data) {
           setTrips(res.data);
         }
       } catch (e) {
         console.error(e);
+        router.push('/login');
       } finally {
         setLoading(false);
-      }
     }
-    loadTrips();
-  }, []);
+    loadData();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
